@@ -31,8 +31,9 @@ int           pixelInterval = 50;       // Pixel Interval (ms)
 int           pixelQueue = 0;           // Pattern Pixel Queue
 int           pixelCycle = 0;           // Pattern Pixel Cycle
 uint16_t      pixelCurrent = 0;         // Pattern Current Pixel Number
-uint16_t      pixelNumber = NUM_LEDS;  // Total Number of Pixels
+uint16_t      pixelNumber = NUM_LEDS;   // Total Number of Pixels
 uint8_t       wantedPattern = 0;        // Wanted Pattern
+
 
 
 void setup() {
@@ -90,6 +91,8 @@ void loop() {
 
 // running light, equal on both strips
 void runningLightSync(int r, int g, int b, int wait){
+  Serial.println("runningLightSync");
+  
   if(pixelInterval != wait)
     pixelInterval = wait;
   leds[pixelCurrent].setRGB(r,g,b);
@@ -102,17 +105,20 @@ void runningLightSync(int r, int g, int b, int wait){
 
 // Change whole strip to a static color
 void changeColor(int r, int g, int b){
+  Serial.println("changeColor");
   for(int i = 0; i < pixelNumber; i++){
     leds[i].setRGB(r,g,b);
   }
+
   FastLED.show();
 }
 
 void rainbow_wave(uint8_t thisSpeed, uint8_t deltaHue) {     // The fill_rainbow call doesn't support brightness levels.
-// uint8_t thisHue = beatsin8(thisSpeed,0,255);                // A simple rainbow wave.
- uint8_t thisHue = beat8(thisSpeed,255);                     // A simple rainbow march.
-  
+  Serial.println("rainbow");
+  uint8_t thisHue = beatsin8(thisSpeed,0,255);                // A simple rainbow wave.
+  // uint8_t thisHue = beat8(thisSpeed,255);                   // A simple rainbow march.
+    
  fill_rainbow(leds, NUM_LEDS, thisHue, deltaHue);         // Use FastLED's fill_rainbow routine.
  FastLED.show();
- 
-} // rainbow_wave()
+}
+
