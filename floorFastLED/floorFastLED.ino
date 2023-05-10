@@ -10,23 +10,23 @@
 // LED Stats
 #define NUM_STRIPS 2
 #define NUM_LEDS_PER_STRIP 42
-#define NUM_LEDS NUM_LEDS_PER_STRIP * NUM_STRIPS
+#define NUM_LEDS 84
 
 // PIN Numbers
 #define BUTTON_PIN 1
-#define LED_PIN_1 2
-#define LED_PIN_2 3
+#define LED_PIN_A 2
+#define LED_PIN_B 3
 
 // create FASTLED array
 CRGB leds[NUM_LEDS];
 
 
 // Functional Stuff
-#define PATTERNS 5
+#define PATTERNS 3
 unsigned long pixelPrevious = 0;        // Previous Pixel Millis
 unsigned long patternPrevious = 0;      // Previous Pattern Millis
 int           patternCurrent = 0;       // Current Pattern Number
-int           patternInterval = 3000;   // Pattern Interval (ms)
+int           patternInterval = 5000;   // Pattern Interval (ms)
 int           pixelInterval = 50;       // Pixel Interval (ms)
 int           pixelQueue = 0;           // Pattern Pixel Queue
 int           pixelCycle = 0;           // Pattern Pixel Cycle
@@ -37,17 +37,16 @@ uint8_t       wantedPattern = 0;        // Wanted Pattern
 
 void setup() {
   // configure Button
-  pinMode(BUTTON_PIN, INPUT_PULLUP);
+  //pinMode(BUTTON_PIN, INPUT_PULLUP);
+
+  Serial.begin(57600);
+  Serial.println("starting");
 
   // tell FASTLED we have multiple strips
-  FastLED.addLeds<WS2812B, LED_PIN_1, GRB>(leds, 0, NUM_LEDS_PER_STRIP);
-  FastLED.addLeds<WS2812B, LED_PIN_2, GRB>(leds, NUM_LEDS_PER_STRIP, NUM_LEDS_PER_STRIP);
+  FastLED.addLeds<WS2812, LED_PIN_A, RGB>(leds, NUM_LEDS_PER_STRIP);
+  FastLED.addLeds<WS2812, LED_PIN_B, RGB>(leds, NUM_LEDS_PER_STRIP, NUM_LEDS_PER_STRIP);
   
-
-  
-
-
-
+  FastLED.setBrightness(69);
 }
 
 
@@ -74,40 +73,46 @@ void loop() {
   if(currentMillis - pixelPrevious >= pixelInterval) {        //  Check for expired time
     pixelPrevious = currentMillis;                            //  Run current frame
     switch (patternCurrent) {
-      case 5:
-        //static
-        changeColor(200,50,50);
-        break;
-      case 4:
-        rainbow_wave(10,10);
-        break;
-      case 3:
-        //theaterChase(strip.Color(127, 127, 127), 50); // White
-        break;
       case 2:
-        //colorWipe(strip.Color(0, 0, 255), 50); // Blue
+        // running lights
+        runningLightSync(20,30,200,25);
         break;
       case 1:
-        //colorWipe(strip.Color(0, 255, 0), 50); // Green
-        break;        
+        rainbow_wave(30,10);
+        break;      
       default:
-        //colorWipe(strip.Color(255, 0, 0), 50); // Red
+        // static
+        changeColor(00,200,00);
         break;
     }
   }
 }
+
+// running light, equal on both strips
+void runningLightSync(int r, int g, int b, int wait){
+  if(pixelInterval != wait)
+    pixelInterval = wait;
+  leds[pixelCurrent].setRGB(r,g,b);
+  leds[NUM_LEDS / 2 + pixelCurrent].setRGB(r,g,b);
+  FastLED.show();
+  pixelCurrent++;
+  if(pixelCurrent >= pixelNumber/2)
+    pixelCurrent = 0;
+  }
 
 // Change whole strip to a static color
 void changeColor(int r, int g, int b){
   for(int i = 0; i < pixelNumber; i++){
     leds[i].setRGB(r,g,b);
   }
+  FastLED.show();
 }
 
 void rainbow_wave(uint8_t thisSpeed, uint8_t deltaHue) {     // The fill_rainbow call doesn't support brightness levels.
 // uint8_t thisHue = beatsin8(thisSpeed,0,255);                // A simple rainbow wave.
  uint8_t thisHue = beat8(thisSpeed,255);                     // A simple rainbow march.
   
- fill_rainbow(leds, NUM_LEDS, thisHue, deltaHue);            // Use FastLED's fill_rainbow routine.
+ fill_rainbow(leds, NUM_LEDS, thisHue, deltaHue);         // Use FastLED's fill_rainbow routine.
+ FastLED.show();
  
 } // rainbow_wave()
