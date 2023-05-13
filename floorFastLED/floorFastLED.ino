@@ -38,18 +38,16 @@ const char* password = APSSK;
 #define PATTERNS 3
 unsigned long pixelPrevious = 0;        // Previous Pixel Millis
 unsigned long patternPrevious = 0;      // Previous Pattern Millis
-int           patternCurrent = 0;       // Current Pattern Number
+int           patternCurrent = 3;       // Current Pattern Number
 int           patternInterval = 5000;   // Pattern Interval (ms)
 int           pixelInterval = 50;       // Pixel Interval (ms)
 int           pixelQueue = 0;           // Pattern Pixel Queue
 int           pixelCycle = 0;           // Pattern Pixel Cycle
 uint16_t      pixelCurrent = 0;         // Pattern Current Pixel Number
-uint16_t      pixelNumber = NUM_LEDS;   // Total Number of Pixels
+uint16_t      pixelNumber = NUM_LEDS+20;   // Total Number of Pixels
 uint8_t       wantedPattern = 0;        // Wanted Pattern
 
-int strandColor = 0xFF080A; // Color of the Leds on the strip
-
-
+int strandColor = 0x009EE0; // Color of the Leds on the strip
 
 ESP8266WebServer server(80);            // Create a webserver object that listens for HTTP request on port 80
 
@@ -161,11 +159,12 @@ void setup() {
   //Serial.println("starting");
 
   // Configure FastLED
-  FastLED.addLeds<WS2812, LED_PIN_A, RGB>(leds, NUM_LEDS_PER_STRIP); // Strip 1
-  FastLED.addLeds<WS2812, LED_PIN_B, RGB>(leds, NUM_LEDS_PER_STRIP, NUM_LEDS_PER_STRIP); //Strip 2
-  FastLED.setBrightness(69);
+  FastLED.addLeds<WS2812, LED_PIN_A, GRB>(leds, NUM_LEDS_PER_STRIP); // Strip 1
+  FastLED.addLeds<WS2812, LED_PIN_B, GRB>(leds, NUM_LEDS_PER_STRIP, NUM_LEDS_PER_STRIP); //Strip 2
+  FastLED.setBrightness(100);
 
   // Configure WiFi
+  WiFi.setSleepMode(WIFI_NONE_SLEEP);
   WiFi.softAP(ssid, password);
   IPAddress myIP = WiFi.softAPIP();
   //Serial.print("AP IP address: ");
@@ -211,7 +210,7 @@ void loop() {
     pixelPrevious = currentMillis;                            //  Run current frame
     switch (patternCurrent) {
       case 3:
-        runningPixelTrail(50, 50);
+        runningPixelTrail(35, 30);
         break;
       case 2:
         // running lights
@@ -230,16 +229,30 @@ void loop() {
 
 // PATTERNS
 
-
 // A running Pixel with a trail that is going slightly darker
-void runningPixelTrail(int dropoff, int wait){ // dropoff in pixels. dropoff-1 = off
+void runningPixelTrail(int trail, int wait){ // dropoff in pixels. dropoff-1 = off
   //Serial.println("runningPixelTrail");
   if(pixelInterval != wait){
     pixelInterval = wait;
   }
+  int fadePixelBy = trail;
 
   leds[pixelCurrent] = strandColor;
-  leds[pixelCurrent-1].fadeToBlackBy(dropoff);
+
+  for(int i = 1; i < trail; i++){
+    if(pixelCurrent-i >= 0){
+      leds[pixelCurrent-i].fadeToBlackBy(fadePixelBy);
+    }else{
+      break;
+    }
+  }
+
+  FastLED.show();
+
+  pixelCurrent++;
+  if(pixelCurrent >= pixelNumber){
+    pixelCurrent = 0;
+  }
 }
 
 // running light, equal on both strips
@@ -247,8 +260,10 @@ void runningLightSync(int wait){
   //Serial.println("runningLightSync");
   if(pixelInterval != wait)
     pixelInterval = wait;
+
   leds[pixelCurrent] = strandColor;
   leds[NUM_LEDS / 2 + pixelCurrent] = strandColor;
+
   FastLED.show();
   pixelCurrent++;
   if(pixelCurrent >= pixelNumber/2)
