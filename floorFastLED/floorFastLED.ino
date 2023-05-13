@@ -3,8 +3,8 @@
 
 // Ein LED Controller mit WIFI unterstützung
 
-// LED Libraries
 #define FASTLED_ESP8266_NODEMCU_PIN_ORDER
+#define FASTLED_ALLOW_INTERRUPTS 0
 #include <FastLED.h>
 
 // WiFi AP Libraries
@@ -46,6 +46,10 @@ int           pixelCycle = 0;           // Pattern Pixel Cycle
 uint16_t      pixelCurrent = 0;         // Pattern Current Pixel Number
 uint16_t      pixelNumber = NUM_LEDS;   // Total Number of Pixels
 uint8_t       wantedPattern = 0;        // Wanted Pattern
+
+int strandColor = 0xFF080A; // Color of the Leds on the strip
+
+
 
 ESP8266WebServer server(80);            // Create a webserver object that listens for HTTP request on port 80
 
@@ -115,45 +119,46 @@ void handleLEDs(){
 
 // change Pattern to the one specified in arg
 void changePattern(String arg){
+  int argInt = arg.toInt();
+  patternCurrent = argInt;
+  
 
+  //Serial.println("A: "+ argInt);
+  //Serial.println("B: " + arg);
 }
 
-// Set Color
+// get color hexstring and set it to strandColor
 void setColor(String arg){
+  int ans = 0;
+
+  // cast hex string to int value
   sscanf(arg.c_str(), "%x", &ans);
 
-}
+  strandColor = ans;
 
-/*
-int main()
-{
-    string input = "13FF00";
-    
-    int ans = 0;
-    
-    sscanf(input.c_str(), "%x",&ans);
-    
-    cout << ans << endl;
-    return 0;
+  //Serial.println("Color: " + ans);
 }
-*/
 
 // Set brightness
 void setBrightness(String arg){
+  int argInt = arg.toInt();
+  FastLED.setBrightness(argInt);
 
+  //Serial.println("Brightness: " + argInt);
 }
 
 // put device into a "standby mode" basically just limiting loop time
 void setStandby(String arg){
-
+  int argInt = arg.toInt();
+  // setStandby
 }
 
 void setup() {
   // configure Button
   // pinMode(BUTTON_PIN, INPUT_PULLUP);
 
-  Serial.begin(57600);
-  Serial.println("starting");
+  //Serial.begin(57600);
+  //Serial.println("starting");
 
   // Configure FastLED
   FastLED.addLeds<WS2812, LED_PIN_A, RGB>(leds, NUM_LEDS_PER_STRIP); // Strip 1
@@ -163,8 +168,8 @@ void setup() {
   // Configure WiFi
   WiFi.softAP(ssid, password);
   IPAddress myIP = WiFi.softAPIP();
-  Serial.print("AP IP address: ");
-  Serial.println(myIP);
+  //Serial.print("AP IP address: ");
+  //Serial.println(myIP);
 
   // Set Server Functions
   server.on("/", handleRoot);
@@ -173,10 +178,10 @@ void setup() {
   
   server.begin();
 
-  Serial.println("HTTP server started");
-  Serial.println("Finished Configuration. Waiting 5 Seconds");
+  //Serial.println("HTTP server started");
+  //Serial.println("Finished Configuration. Waiting 5 Seconds");
   
-  delay(5000);
+  //delay(5000);
 }
 
 
@@ -201,53 +206,69 @@ void loop() {
   //   Serial.println("currentpattern "+patternCurrent);
   // }
 
-  // Check for expired time and change Pattern if wanted/needed
+  // Check time against pixelInterval and change Pattern if wanted/needed
   if(currentMillis - pixelPrevious >= pixelInterval) {        //  Check for expired time
     pixelPrevious = currentMillis;                            //  Run current frame
     switch (patternCurrent) {
+      case 3:
+        runningPixelTrail(50, 50);
+        break;
       case 2:
         // running lights
-        runningLightSync(20,30,200,25);
+        runningLightSync(25);
         break;
       case 1:
         rainbow_wave(30,10);
         break;      
       default:
         // static
-        changeColor(00,200,00);
+        changeColor();
         break;
     }
   }
 }
 
+// PATTERNS
+
+
+// A running Pixel with a trail that is going slightly darker
+void runningPixelTrail(int dropoff, int wait){ // dropoff in pixels. dropoff-1 = off
+  //Serial.println("runningPixelTrail");
+  if(pixelInterval != wait){
+    pixelInterval = wait;
+  }
+
+  leds[pixelCurrent] = strandColor;
+  leds[pixelCurrent-1].fadeToBlackBy(dropoff);
+}
+
 // running light, equal on both strips
-void runningLightSync(int r, int g, int b, int wait){
+void runningLightSync(int wait){
   //Serial.println("runningLightSync");
-  
   if(pixelInterval != wait)
     pixelInterval = wait;
-  leds[pixelCurrent].setRGB(r,g,b);
-  leds[NUM_LEDS / 2 + pixelCurrent].setRGB(r,g,b);
+  leds[pixelCurrent] = strandColor;
+  leds[NUM_LEDS / 2 + pixelCurrent] = strandColor;
   FastLED.show();
   pixelCurrent++;
   if(pixelCurrent >= pixelNumber/2)
     pixelCurrent = 0;
-  }
+}
 
 // Change entire led Array to a static color
-void changeColor(int r, int g, int b){
+void changeColor(){
   //Serial.println("changeColor");
   for(int i = 0; i < pixelNumber; i++){
-    leds[i].setRGB(r,g,b);
+    leds[i] = strandColor;
   }
   FastLED.show();
 }
 
-void rainbow_wave(uint8_t thisSpeed, uint8_t deltaHue) {     // The fill_rainbow call doesn't support brightness levels.
+void rainbow_wave(uint8_t bpm, uint8_t deltaHue) {     // The fill_rainbow call doesn't support brightness levels.
   //Serial.println("rainbow");
-  uint8_t thisHue = beatsin8(thisSpeed,0,255);                // A simple rainbow wave.
-  // uint8_t thisHue = beat8(thisSpeed,255);                   // A simple rainbow march.
+  //uint8_t thisHue = beatsin8(bpm,0,255);               // A simple rainbow wave.
+  uint8_t thisHue = beat8(bpm,255);           // A simple rainbow march.
     
- fill_rainbow(leds, NUM_LEDS, thisHue, deltaHue);         // Use FastLED's fill_rainbow routine.
+ fill_rainbow(leds, NUM_LEDS, thisHue, deltaHue);      // Use FastLED's fill_rainbow routine.
  FastLED.show();
 }
