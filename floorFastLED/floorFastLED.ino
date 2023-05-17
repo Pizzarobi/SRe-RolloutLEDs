@@ -17,6 +17,9 @@
 #define APSSID "schanzerPOWER"
 #define APSSK "pimmelberger"
 
+#define STASSID "schanzerPower"
+#define STAPSK "pimmelberger"
+
 // LED Stats
 #define NUM_STRIPS 2
 #define NUM_LEDS_PER_STRIP 42
@@ -31,8 +34,8 @@
 CRGB leds[NUM_LEDS];
 
 // set WiFi Credentials
-const char* ssid = APSSID;
-const char* password = APSSK;
+const char* ssid = STASSID;
+const char* password = STAPSK;
 
 // Functional Stuff
 #define PATTERNS 3
@@ -44,7 +47,7 @@ int           pixelInterval = 50;       // Pixel Interval (ms)
 int           pixelQueue = 0;           // Pattern Pixel Queue
 int           pixelCycle = 0;           // Pattern Pixel Cycle
 uint16_t      pixelCurrent = 0;         // Pattern Current Pixel Number
-uint16_t      pixelNumber = NUM_LEDS+20;   // Total Number of Pixels
+uint16_t      pixelNumber = NUM_LEDS;   // Total Number of Pixels
 uint8_t       wantedPattern = 0;        // Wanted Pattern
 
 int strandColor = 0x009EE0; // Color of the Leds on the strip
@@ -163,12 +166,22 @@ void setup() {
   FastLED.addLeds<WS2812, LED_PIN_B, GRB>(leds, NUM_LEDS_PER_STRIP, NUM_LEDS_PER_STRIP); //Strip 2
   FastLED.setBrightness(100);
 
-  // Configure WiFi
-  WiFi.setSleepMode(WIFI_NONE_SLEEP);
-  WiFi.softAP(ssid, password);
-  IPAddress myIP = WiFi.softAPIP();
+  // Configure WiFi AP
+  //WiFi.setSleepMode(WIFI_NONE_SLEEP);
+  //WiFi.softAP(ssid, password);
+  //IPAddress myIP = WiFi.softAPIP();
   //Serial.print("AP IP address: ");
   //Serial.println(myIP);
+
+  // Configure WiFi Client
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(ssid,password);
+
+  // Wait for connection
+  while(WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    //Serial.print(".");
+  }
 
   // Set Server Functions
   server.on("/", handleRoot);
@@ -230,20 +243,22 @@ void loop() {
 // PATTERNS
 
 // A running Pixel with a trail that is going slightly darker
-void runningPixelTrail(int trail, int wait){ // dropoff in pixels. dropoff-1 = off
+void runningPixelTrail(int trail, int wait){
   //Serial.println("runningPixelTrail");
   if(pixelInterval != wait){
     pixelInterval = wait;
   }
-  int fadePixelBy = trail;
+  int fadePixelBy = 255/trail+2;
+  int fadePixel = 0;
 
   leds[pixelCurrent] = strandColor;
 
   for(int i = 1; i < trail; i++){
-    if(pixelCurrent-i >= 0){
-      leds[pixelCurrent-i].fadeToBlackBy(fadePixelBy);
+    fadePixel = pixelCurrent-i;
+    if(fadePixel<0){
+      leds[NUM_LEDS+fadePixel].fadeToBlackBy(fadePixelBy);
     }else{
-      break;
+      leds[fadePixel].fadeToBlackBy(fadePixelBy);
     }
   }
 
