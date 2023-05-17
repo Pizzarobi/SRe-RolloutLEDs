@@ -248,7 +248,7 @@ void runningPixelTrail(int trail, int wait){
   if(pixelInterval != wait){
     pixelInterval = wait;
   }
-  int fadePixelBy = 255/trail+2;
+  int fadePixelBy = trail;
   int fadePixel = 0;
 
   leds[pixelCurrent] = strandColor;
