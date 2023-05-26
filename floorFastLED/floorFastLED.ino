@@ -51,12 +51,13 @@ uint16_t      pixelNumber = NUM_LEDS;   // Total Number of Pixels
 uint8_t       wantedPattern = 0;        // Wanted Pattern
 
 int strandColor = 0x009EE0; // Color of the Leds on the strip
+uint8_t turnedOff = 0;
 
 ESP8266WebServer server(80);            // Create a webserver object that listens for HTTP request on port 80
 
 // Test Message to see if WiFi and Server are working
 void handleRoot() {
-  server.send(200, "text/html", "<h1>Willkommen im Schanzer LED System!</h1>");
+  server.send(200, "text/html", "<h1>Willkommen im Schanzer LED System!</h1> Moegliche Calls: Pattern, Brightness, Color, standby");
 }
 
 // If handle is not found, print out error and passed Arguments (usefull for debugging Arguments)
@@ -152,6 +153,7 @@ void setBrightness(String arg){
 void setStandby(String arg){
   int argInt = arg.toInt();
   // setStandby
+  turnedOff = argInt;
 }
 
 void setup() {
@@ -222,6 +224,11 @@ void loop() {
   if(currentMillis - pixelPrevious >= pixelInterval) {        //  Check for expired time
     pixelPrevious = currentMillis;                            //  Run current frame
     switch (patternCurrent) {
+      case 4:
+        if(turnedOff == 0){
+          turnOffStrip();
+        }
+        break;
       case 3:
         runningPixelTrail(35, 30);
         break;
@@ -241,6 +248,14 @@ void loop() {
 }
 
 // PATTERNS
+
+void turnOffStrip(){
+  turnedOff = 1;
+  for(int i = 0; i < pixelNumber; i++){
+    leds[i] = 0x000000;
+  }
+  FastLED.show();
+}
 
 // A running Pixel with a trail that is going slightly darker
 void runningPixelTrail(int trail, int wait){
