@@ -38,7 +38,7 @@ const char* ssid = STASSID;
 const char* password = STAPSK;
 
 // Functional Stuff
-#define PATTERNS 3
+#define PATTERNS 4
 unsigned long pixelPrevious = 0;        // Previous Pixel Millis
 unsigned long patternPrevious = 0;      // Previous Pattern Millis
 int           patternCurrent = 3;       // Current Pattern Number
@@ -57,7 +57,7 @@ ESP8266WebServer server(80);            // Create a webserver object that listen
 
 // Test Message to see if WiFi and Server are working
 void handleRoot() {
-  server.send(200, "text/html", "<h1>Willkommen im Schanzer LED System!</h1> Moegliche Calls: Pattern, Brightness, Color, standby");
+  server.send(200, "text/html", "<h1>Willkommen im Schanzer LED System!</h1>Moegliche Calls: Pattern, Brightness, Color, standby<br><br>Pattern:<br>0: changeColor<br>1: rainbow_wave<br>2: runningLightSync<br>3: runningPixelTrail<br>4: Pixels Off!<br><br> Brightness: 0-255 <br><br> Color: Farbe in Hex<br><br>Schanzer Hex: 0x009EE0");
 }
 
 // If handle is not found, print out error and passed Arguments (usefull for debugging Arguments)
@@ -166,7 +166,7 @@ void setup() {
   // Configure FastLED
   FastLED.addLeds<WS2812, LED_PIN_A, GRB>(leds, NUM_LEDS_PER_STRIP); // Strip 1
   FastLED.addLeds<WS2812, LED_PIN_B, GRB>(leds, NUM_LEDS_PER_STRIP, NUM_LEDS_PER_STRIP); //Strip 2
-  FastLED.setBrightness(100);
+  FastLED.setBrightness(255);
 
   // Configure WiFi AP
   //WiFi.setSleepMode(WIFI_NONE_SLEEP);
@@ -225,9 +225,7 @@ void loop() {
     pixelPrevious = currentMillis;                            //  Run current frame
     switch (patternCurrent) {
       case 4:
-        if(turnedOff == 0){
-          turnOffStrip();
-        }
+        turnOffStrip();
         break;
       case 3:
         runningPixelTrail(35, 30);
